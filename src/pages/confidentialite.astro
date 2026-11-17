@@ -1,0 +1,53 @@
+---
+import Texte from '@/layouts/Texte.astro';
+import { site } from '@/config/site';
+const l = site.legal;
+const prestataire =
+  site.formulaire.service === 'formspree'
+    ? 'Formspree, Inc. (États-Unis), encadré par les clauses contractuelles types de la Commission européenne'
+    : 'Netlify, Inc. (États-Unis), encadré par les clauses contractuelles types de la Commission européenne';
+---
+
+<Texte titre="Politique de confidentialité" surtitre="RGPD" description="Comment sont traitées vos données personnelles.">
+  <p><em>Modèle à faire relire et compléter avant la mise en ligne. Les éléments entre crochets sont des placeholders.</em></p>
+
+  <h2>Responsable du traitement</h2>
+  <p>{l.editeur}, {l.adresse}. Contact : <a href={`mailto:${site.email}`}>{site.email}</a>.</p>
+
+  <h2>Données collectées</h2>
+  <p>
+    Le site ne collecte des données que lorsque vous utilisez le formulaire de contact : nom, adresse e-mail, œuvre
+    concernée le cas échéant et contenu de votre message.
+  </p>
+
+  <h2>Finalité et base légale</h2>
+  <p>
+    Ces données servent uniquement à répondre à votre demande (base légale : votre consentement et les mesures
+    précontractuelles prises à votre demande, article 6.1 a et b du RGPD). Elles ne sont ni vendues, ni cédées, ni
+    utilisées à des fins publicitaires.
+  </p>
+
+  <h2>Destinataires et sous-traitants</h2>
+  <p>
+    Seul·e {site.nom} a accès à vos messages. Le formulaire est transmis via {prestataire}. L'hébergement du site est
+    assuré par {l.hebergeur}.
+  </p>
+
+  <h2>Durée de conservation</h2>
+  <p>Vos messages sont conservés [3 ans] à compter du dernier échange, puis supprimés.</p>
+
+  <h2>Cookies et mesure d'audience</h2>
+  <p>
+    Ce site ne dépose aucun cookie publicitaire ni traceur tiers. [Si une mesure d'audience est ajoutée, préciser
+    l'outil et s'il est exempté de consentement.]
+  </p>
+
+  <h2>Vos droits</h2>
+  <p>
+    Vous disposez d'un droit d'accès, de rectification, d'effacement, de limitation, d'opposition et de portabilité de
+    vos données. Pour les exercer, écrivez à <a href={`mailto:${site.email}`}>{site.email}</a>. Vous pouvez aussi
+    introduire une réclamation auprès de la CNIL (<a href="https://www.cnil.fr" rel="noopener">cnil.fr</a>).
+  </p>
+
+  <p><small>Dernière mise à jour : {l.misAJour}.</small></p>
+</Texte>
