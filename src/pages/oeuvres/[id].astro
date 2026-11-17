@@ -1,0 +1,410 @@
+---
+import { Picture, getImage } from 'astro:assets';
+import { render } from 'astro:content';
+import Base from '@/layouts/Base.astro';
+import { site } from '@/config/site';
+import { toutesLesOeuvres, libellePrix, type Oeuvre } from '@/lib/oeuvres';
+import { oeuvreJsonLd, personneJsonLd } from '@/lib/jsonld';
+
+export async function getStaticPaths() {
+  const oeuvres = await toutesLesOeuvres();
+  return oeuvres.map((oeuvre, i) => ({
+    params: { id: oeuvre.id },
+    props: {
+      oeuvre,
+      precedente: oeuvres[i - 1] ?? null,
+      suivante: oeuvres[i + 1] ?? null,
+    },
+  }));
+}
+
+interface Props {
+  oeuvre: Oeuvre;
+  precedente: Oeuvre | null;
+  suivante: Oeuvre | null;
+}
+
+const { oeuvre, precedente, suivante } = Astro.props;
+const d = oeuvre.data;
+const { Content } = await render(oeuvre);
+
+// Versions grand format pour la lightbox (WebP, largeur plafonnée).
+const grandes = await Promise.all(
+  d.images.map((img) => getImage({ src: img.src, width: Math.min(2400, img.src.width), format: 'webp' })),
+);
+const og = await getImage({ src: d.images[0].src, width: 1200, format: 'jpeg' });
+
+const infos = [
+  ['Année', String(d.annee)],
+  ['Matériaux', d.materiaux],
+  ['Dimensions', d.dimensions],
+  ...(d.serie ? [['Série', d.serie]] : []),
+  ['Disponibilité', d.disponible ? 'Disponible' : 'Collection privée'],
+  ...(d.disponible ? [['Prix', libellePrix(oeuvre)]] : []),
+];
+const lienContact = `/contact?oeuvre=${encodeURIComponent(d.titre)}#formulaire`;
+const resume = `${d.titre} (${d.annee}), ${d.materiaux.toLowerCase()}, ${d.dimensions}. Sculpture de ${site.nom}.`;
+---
+
+<Base
+  titre={d.titre}
+  description={resume}
+  image={og.src}
+  imageAlt={d.images[0].alt}
+  type="article"
+  jsonLd={[oeuvreJsonLd(oeuvre, Astro.site, og.src), personneJsonLd(Astro.site)]}
+>
+  <article class="conteneur grid gap-10 pt-10 sm:pt-14 lg:grid-cols-[3fr_2fr] lg:gap-16">
+    <!-- Carrousel -->
+    <section aria-roledescription="carrousel" aria-label={`Photos de ${d.titre}`} class="carrousel min-w-0">
+      <div class="relative">
+        <ul class="piste flex snap-x snap-mandatory overflow-x-auto scroll-smooth bg-papier-2 [scrollbar-width:none]" tabindex="0" aria-label="Diapositives, faites défiler horizontalement">
+          {
+            d.images.map((img, i) => (
+              <li class="w-full shrink-0 snap-center" aria-roledescription="diapositive" aria-label={`${i + 1} sur ${d.images.length}`}>
+                <button type="button" class="ouvrir-lightbox group relative block w-full cursor-zoom-in" data-index={i} aria-label={`Agrandir : ${img.alt}`}>
+                  <Picture
+                    src={img.src}
+                    alt={img.alt}
+                    widths={[480, 800, 1100, 1500]}
+                    sizes="(min-width: 1024px) 60vw, 100vw"
+                    formats={['avif', 'webp']}
+                    loading={i === 0 ? 'eager' : 'lazy'}
+                    fetchpriority={i === 0 ? 'high' : 'auto'}
+                    class="mx-auto h-[70svh] w-full object-contain"
+                  />
+                  {site.protection.filigrane && <span class="filigrane" aria-hidden="true">{site.protection.texteFiligrane}</span>}
+                </button>
+              </li>
+            ))
+          }
+        </ul>
+        {
+          d.images.length > 1 && (
+            <>
+              <button type="button" class="nav-carrousel left-2" data-dir="-1" aria-label="Photo précédente">‹</button>
+              <button type="button" class="nav-carrousel right-2" data-dir="1" aria-label="Photo suivante">›</button>
+            </>
+          )
+        }
+      </div>
+      {
+        d.images.length > 1 && (
+          <ul class="mt-3 flex gap-2" aria-label="Miniatures">
+            {d.images.map((img, i) => (
+              <li>
+                <button type="button" class="miniature block w-16 border border-transparent opacity-60 transition hover:opacity-100 aria-[current=true]:border-encre aria-[current=true]:opacity-100 sm:w-20" data-index={i} aria-label={`Afficher la photo ${i + 1}`} aria-current={i === 0 ? 'true' : 'false'}>
+                  <Picture src={img.src} alt="" width={160} formats={['webp']} class="aspect-square w-full object-cover" />
+                </button>
+              </li>
+            ))}
+          </ul>
+        )
+      }
+    </section>
+
+    <!-- Informations -->
+    <section class="lg:pt-6">
+      <a href="/galerie" class="surtitre lien no-underline">← Galerie</a>
+      <h1 class="mt-4 text-4xl sm:text-5xl">{d.titre}</h1>
+      <dl class="mt-8 divide-y divide-trait border-y border-trait text-sm">
+        {
+          infos.map(([terme, valeur]) => (
+            <div class="flex justify-between gap-6 py-3">
+              <dt class="text-encre-douce">{terme}</dt>
+              <dd class="text-right">{valeur}</dd>
+            </div>
+          ))
+        }
+      </dl>
+      <div class="prose prose-neutral mt-8 max-w-none font-serif text-lg leading-relaxed">
+        <Content />
+      </div>
+      <a href={lienContact} class="bouton-plein mt-10 w-full sm:w-auto">Demander des informations</a>
+    </section>
+  </article>
+
+  <nav aria-label="Autres œuvres" class="conteneur mt-20 flex justify-between gap-6 border-t border-trait pt-8 text-sm">
+    {precedente ? <a class="lien" href={`/oeuvres/${precedente.id}`}>← {precedente.data.titre}</a> : <span></span>}
+    {suivante && <a class="lien text-right" href={`/oeuvres/${suivante.id}`}>{suivante.data.titre} →</a>}
+  </nav>
+
+  <!-- Lightbox -->
+  <dialog
+    id="lightbox"
+    class="lightbox"
+    aria-label={`${d.titre}, vue agrandie`}
+    data-clic-droit={site.protection.clicDroitLightbox ? 'bloque' : 'autorise'}
+  >
+    <div class="lb-scene">
+      <img class="lb-image" alt="" draggable="false" />
+      {site.protection.filigrane && <span class="filigrane" aria-hidden="true">{site.protection.texteFiligrane}</span>}
+    </div>
+    <p class="lb-legende" aria-live="polite"></p>
+    <div class="lb-outils">
+      <button type="button" data-action="prec" aria-label="Photo précédente (flèche gauche)">‹</button>
+      <button type="button" data-action="zoom" aria-label="Zoomer (touche +)" aria-pressed="false">+</button>
+      <button type="button" data-action="suiv" aria-label="Photo suivante (flèche droite)">›</button>
+      <button type="button" data-action="fermer" aria-label="Fermer (Échap)">✕</button>
+    </div>
+    <script is:inline type="application/json" class="lb-donnees" set:html={JSON.stringify(grandes.map((g, i) => ({ src: g.src, alt: d.images[i].alt })))} />
+  </dialog>
+</Base>
+
+<style>
+  .nav-carrousel {
+    position: absolute;
+    top: 50%;
+    translate: 0 -50%;
+    display: grid;
+    place-items: center;
+    width: 2.75rem;
+    height: 2.75rem;
+    font-size: 1.75rem;
+    line-height: 1;
+    background: color-mix(in srgb, var(--color-papier) 80%, transparent);
+    transition: background 0.3s;
+  }
+  .nav-carrousel:hover {
+    background: var(--color-papier);
+  }
+  .filigrane {
+    position: absolute;
+    right: 1rem;
+    bottom: 1rem;
+    font-family: var(--font-serif);
+    font-size: clamp(0.9rem, 2vw, 1.25rem);
+    color: rgb(255 255 255 / 0.75);
+    text-shadow: 0 1px 2px rgb(0 0 0 / 0.35);
+    pointer-events: none;
+    user-select: none;
+  }
+  .lightbox {
+    width: 100vw;
+    height: 100dvh;
+    max-width: none;
+    max-height: none;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    background: #141414;
+    color: #f7f5f1;
+    overflow: hidden;
+  }
+  .lightbox[open] {
+    animation: fondu 0.3s ease-out;
+  }
+  .lightbox::backdrop {
+    background: #141414;
+  }
+  .lb-scene {
+    position: absolute;
+    inset: 0 0 4.5rem;
+    display: grid;
+    place-items: center;
+    overflow: hidden;
+    touch-action: none;
+  }
+  .lb-image {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+    cursor: zoom-in;
+    transition: transform 0.35s ease;
+    user-select: none;
+    -webkit-user-drag: none;
+    -webkit-touch-callout: none;
+  }
+  .lightbox.zoome .lb-image {
+    cursor: grab;
+    transition: none;
+  }
+  .lb-legende {
+    position: absolute;
+    left: 1rem;
+    bottom: 1.4rem;
+    right: 14rem;
+    font-size: 0.85rem;
+    opacity: 0.8;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .lb-outils {
+    position: absolute;
+    right: 0.5rem;
+    bottom: 0.75rem;
+    display: flex;
+    gap: 0.25rem;
+  }
+  .lb-outils button {
+    width: 2.75rem;
+    height: 2.75rem;
+    font-size: 1.4rem;
+    line-height: 1;
+    border-radius: 999px;
+    transition: background 0.3s;
+  }
+  .lb-outils button:hover,
+  .lb-outils button:focus-visible {
+    background: rgb(255 255 255 / 0.12);
+  }
+  @media (max-width: 640px) {
+    .lb-legende {
+      right: 1rem;
+      bottom: 4rem;
+    }
+    .lb-scene {
+      inset: 0 0 6.5rem;
+    }
+  }
+  @keyframes fondu {
+    from {
+      opacity: 0;
+    }
+  }
+</style>
+
+<script>
+  function initialiserFiche() {
+    const carrousel = document.querySelector<HTMLElement>('.carrousel');
+    const dialog = document.querySelector<HTMLDialogElement>('#lightbox');
+    if (!carrousel || !dialog) return;
+
+    // ---------- Carrousel ----------
+    const piste = carrousel.querySelector<HTMLElement>('.piste')!;
+    const miniatures = [...carrousel.querySelectorAll<HTMLButtonElement>('.miniature')];
+    const total = piste.children.length;
+    const indexCourant = () => Math.round(piste.scrollLeft / piste.clientWidth);
+    const allerA = (i: number) => {
+      const cible = (i + total) % total;
+      piste.scrollTo({ left: cible * piste.clientWidth });
+    };
+    carrousel.querySelectorAll<HTMLButtonElement>('.nav-carrousel').forEach((b) =>
+      b.addEventListener('click', () => allerA(indexCourant() + Number(b.dataset.dir))),
+    );
+    miniatures.forEach((m) => m.addEventListener('click', () => allerA(Number(m.dataset.index))));
+    piste.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowRight') { e.preventDefault(); allerA(indexCourant() + 1); }
+      if (e.key === 'ArrowLeft') { e.preventDefault(); allerA(indexCourant() - 1); }
+    });
+    piste.addEventListener('scroll', () => {
+      const i = indexCourant();
+      miniatures.forEach((m, j) => m.setAttribute('aria-current', String(i === j)));
+    }, { passive: true });
+
+    // ---------- Lightbox ----------
+    const images: { src: string; alt: string }[] = JSON.parse(dialog.querySelector('.lb-donnees')!.textContent || '[]');
+    const img = dialog.querySelector<HTMLImageElement>('.lb-image')!;
+    const scene = dialog.querySelector<HTMLElement>('.lb-scene')!;
+    const legende = dialog.querySelector<HTMLElement>('.lb-legende')!;
+    const boutonZoom = dialog.querySelector<HTMLButtonElement>('[data-action="zoom"]')!;
+    let courant = 0;
+    let echelle = 1;
+    let x = 0;
+    let y = 0;
+
+    const appliquerTransform = () => {
+      img.style.transform = `translate(${x}px, ${y}px) scale(${echelle})`;
+      dialog.classList.toggle('zoome', echelle > 1);
+      boutonZoom.setAttribute('aria-pressed', String(echelle > 1));
+      boutonZoom.textContent = echelle > 1 ? '−' : '+';
+      boutonZoom.setAttribute('aria-label', echelle > 1 ? 'Dézoomer (touche −)' : 'Zoomer (touche +)');
+    };
+    const reinitialiserZoom = () => { echelle = 1; x = 0; y = 0; appliquerTransform(); };
+    const zoomer = (facteur: number) => {
+      echelle = Math.min(4, Math.max(1, echelle * facteur));
+      if (echelle === 1) { x = 0; y = 0; }
+      appliquerTransform();
+    };
+    const afficher = (i: number) => {
+      courant = (i + images.length) % images.length;
+      reinitialiserZoom();
+      img.src = images[courant].src;
+      img.alt = images[courant].alt;
+      legende.textContent = `${courant + 1} / ${images.length} — ${images[courant].alt}`;
+    };
+    const ouvrir = (i: number) => {
+      afficher(i);
+      dialog.showModal();
+      document.documentElement.style.overflow = 'hidden';
+    };
+
+    carrousel.querySelectorAll<HTMLButtonElement>('.ouvrir-lightbox').forEach((b) =>
+      b.addEventListener('click', () => ouvrir(Number(b.dataset.index))),
+    );
+    dialog.addEventListener('close', () => {
+      document.documentElement.style.overflow = '';
+      allerA(courant);
+    });
+    dialog.addEventListener('click', (e) => {
+      const action = (e.target as HTMLElement).closest<HTMLElement>('[data-action]')?.dataset.action;
+      if (action === 'prec') afficher(courant - 1);
+      else if (action === 'suiv') afficher(courant + 1);
+      else if (action === 'zoom') echelle > 1 ? reinitialiserZoom() : zoomer(2);
+      else if (action === 'fermer') dialog.close();
+    });
+    img.addEventListener('click', (e) => {
+      if (echelle > 1 || deplace) return;
+      // Zoom centré sur le point cliqué.
+      const r = img.getBoundingClientRect();
+      x = (r.left + r.width / 2 - e.clientX) * 1.5;
+      y = (r.top + r.height / 2 - e.clientY) * 1.5;
+      echelle = 2.5;
+      appliquerTransform();
+    });
+
+    // Déplacement de l'image zoomée (souris, doigt, stylet).
+    let origine: { px: number; py: number; x: number; y: number } | null = null;
+    let deplace = false;
+    scene.addEventListener('pointerdown', (e) => {
+      if (echelle === 1) { deplace = false; return; }
+      origine = { px: e.clientX, py: e.clientY, x, y };
+      deplace = false;
+      scene.setPointerCapture(e.pointerId);
+    });
+    scene.addEventListener('pointermove', (e) => {
+      if (!origine) return;
+      const dx = e.clientX - origine.px;
+      const dy = e.clientY - origine.py;
+      if (Math.abs(dx) + Math.abs(dy) > 4) deplace = true;
+      x = origine.x + dx;
+      y = origine.y + dy;
+      appliquerTransform();
+    });
+    scene.addEventListener('pointerup', () => { origine = null; });
+    scene.addEventListener('wheel', (e) => { e.preventDefault(); zoomer(e.deltaY < 0 ? 1.2 : 1 / 1.2); }, { passive: false });
+
+    // Navigation clavier (Échap est géré nativement par <dialog>).
+    dialog.addEventListener('keydown', (e) => {
+      const pas = 60;
+      switch (e.key) {
+        case 'ArrowRight': echelle > 1 ? (x -= pas, appliquerTransform()) : afficher(courant + 1); break;
+        case 'ArrowLeft': echelle > 1 ? (x += pas, appliquerTransform()) : afficher(courant - 1); break;
+        case 'ArrowUp': if (echelle > 1) { y += pas; appliquerTransform(); } else return; break;
+        case 'ArrowDown': if (echelle > 1) { y -= pas; appliquerTransform(); } else return; break;
+        case '+': case '=': zoomer(1.5); break;
+        case '-': case '_': zoomer(1 / 1.5); break;
+        case '0': reinitialiserZoom(); break;
+        default: return;
+      }
+      e.preventDefault();
+    });
+
+    // Balayage horizontal sur mobile quand l'image n'est pas zoomée.
+    let debutX: number | null = null;
+    scene.addEventListener('touchstart', (e) => { debutX = echelle === 1 ? e.touches[0].clientX : null; }, { passive: true });
+    scene.addEventListener('touchend', (e) => {
+      if (debutX === null) return;
+      const dx = e.changedTouches[0].clientX - debutX;
+      if (Math.abs(dx) > 50) afficher(courant + (dx < 0 ? 1 : -1));
+      debutX = null;
+    });
+
+    // Protection légère : clic droit désactivé dans la lightbox (contournable).
+    if (dialog.dataset.clicDroit === 'bloque') {
+      dialog.addEventListener('contextmenu', (e) => e.preventDefault());
+    }
+  }
+  document.addEventListener('astro:page-load', initialiserFiche);
+</script>
