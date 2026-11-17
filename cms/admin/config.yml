@@ -1,0 +1,72 @@
+# Decap CMS : interface d'administration pour que l'artiste ajoute ses œuvres.
+# PRÉPARÉ MAIS NON ACTIVÉ. Voir la section « Decap CMS » du README pour l'activer.
+
+backend:
+  name: git-gateway
+  branch: main
+  commit_messages:
+    create: "Ajout de l'œuvre « {{slug}} »"
+    update: "Mise à jour de l'œuvre « {{slug}} »"
+    delete: "Suppression de l'œuvre « {{slug}} »"
+
+locale: fr
+site_url: https://www.exemple-sculpteur.fr
+display_url: https://www.exemple-sculpteur.fr
+publish_mode: editorial_workflow
+
+# Médias par défaut (non utilisés par les œuvres, qui ont leur propre dossier).
+media_folder: src/assets
+public_folder: ../../assets
+
+collections:
+  - name: oeuvres
+    label: Œuvres
+    label_singular: Œuvre
+    folder: src/content/oeuvres
+    create: true
+    slug: "{{slug}}"
+    identifier_field: titre
+    summary: "{{titre}} ({{annee}})"
+    # Les photos sont enregistrées dans src/content/oeuvres/images
+    # et référencées en relatif (./images/…), comme attendu par astro:assets.
+    media_folder: images
+    public_folder: ./images
+    fields:
+      - { label: Titre, name: titre, widget: string }
+      - { label: Année, name: annee, widget: number, value_type: int, min: 1900, max: 2100 }
+      - { label: Matériaux, name: materiaux, widget: string, hint: "Ex. : Bronze patiné, Marbre de Carrare, Bois de noyer" }
+      - { label: Dimensions, name: dimensions, widget: string, hint: "Ex. : 45 × 30 × 20 cm" }
+      - { label: Série, name: serie, widget: string, required: false }
+      - { label: Disponible à la vente, name: disponible, widget: boolean, default: true }
+      - { label: Prix, name: prix, widget: string, required: false, hint: "Laisser vide pour afficher « Prix sur demande »" }
+      - { label: Mettre en avant sur l'accueil, name: vedette, widget: boolean, default: false, required: false }
+      - { label: Ordre dans la galerie, name: ordre, widget: number, value_type: int, default: 100, required: false }
+      - label: Photos
+        name: images
+        widget: list
+        min: 1
+        hint: "La première photo sert de couverture."
+        fields:
+          - { label: Photo, name: src, widget: image, choose_url: false }
+          - { label: "Description de la photo (obligatoire, pour l'accessibilité)", name: alt, widget: string, pattern: ['.*\S.*', "La description ne peut pas être vide."] }
+      - { label: Texte, name: body, widget: markdown, buttons: [bold, italic, link, bulleted-list], editor_components: [] }
+
+  - name: expositions
+    label: Expositions et actualités
+    label_singular: Événement
+    folder: src/content/expositions
+    create: true
+    slug: "{{year}}-{{slug}}"
+    identifier_field: titre
+    fields:
+      - { label: Titre, name: titre, widget: string }
+      - { label: Lieu, name: lieu, widget: string }
+      - { label: Ville, name: ville, widget: string }
+      - { label: Début, name: debut, widget: datetime, time_format: false, date_format: "DD/MM/YYYY", format: "YYYY-MM-DD" }
+      - { label: Fin, name: fin, widget: datetime, time_format: false, date_format: "DD/MM/YYYY", format: "YYYY-MM-DD", required: false }
+      - label: Type
+        name: type
+        widget: select
+        options: ["exposition personnelle", "exposition collective", "salon", "actualité"]
+      - { label: Lien externe, name: lien, widget: string, required: false }
+      - { label: Texte, name: body, widget: markdown, buttons: [bold, italic, link], editor_components: [] }
