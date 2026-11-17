@@ -1,0 +1,125 @@
+---
+import { Picture } from 'astro:assets';
+import Base from '@/layouts/Base.astro';
+import { toutesLesOeuvres, cle, materiauPrincipal, libellePrix } from '@/lib/oeuvres';
+
+const oeuvres = await toutesLesOeuvres();
+const unique = (valeurs: string[]) => [...new Set(valeurs)].sort((a, b) => a.localeCompare(b, 'fr'));
+const series = unique(oeuvres.flatMap((o) => (o.data.serie ? [o.data.serie] : [])));
+const materiaux = unique(oeuvres.map((o) => materiauPrincipal(o.data.materiaux)));
+---
+
+<Base titre="Galerie" description="Toutes les sculptures : filtrez par série, matériau ou disponibilité.">
+  <div class="conteneur pt-14 pb-8 sm:pt-20">
+    <p class="surtitre">Œuvres</p>
+    <h1 class="mt-3 text-4xl sm:text-6xl">Galerie</h1>
+
+    <form id="filtres" class="mt-10 grid gap-4 text-sm sm:grid-cols-3" aria-label="Filtrer les œuvres">
+      <label class="flex flex-col gap-1">
+        <span class="surtitre">Série</span>
+        <select name="serie" class="champ cursor-pointer">
+          <option value="">Toutes</option>
+          {series.map((s) => <option value={cle(s)}>{s}</option>)}
+        </select>
+      </label>
+      <label class="flex flex-col gap-1">
+        <span class="surtitre">Matériau</span>
+        <select name="materiau" class="champ cursor-pointer">
+          <option value="">Tous</option>
+          {materiaux.map((m) => <option value={cle(m)}>{m}</option>)}
+        </select>
+      </label>
+      <label class="flex flex-col gap-1">
+        <span class="surtitre">Disponibilité</span>
+        <select name="dispo" class="champ cursor-pointer">
+          <option value="">Toutes</option>
+          <option value="oui">Disponibles</option>
+          <option value="non">Collection privée</option>
+        </select>
+      </label>
+    </form>
+    <p id="compteur" class="mt-6 text-sm text-encre-douce" aria-live="polite">{oeuvres.length} œuvres</p>
+  </div>
+
+  <ul class="conteneur columns-1 gap-6 sm:columns-2 lg:columns-3" id="grille">
+    {
+      oeuvres.map((o, i) => (
+        <li
+          class="oeuvre mb-6 break-inside-avoid"
+          data-serie={o.data.serie ? cle(o.data.serie) : ''}
+          data-materiau={cle(materiauPrincipal(o.data.materiaux))}
+          data-dispo={o.data.disponible ? 'oui' : 'non'}
+        >
+          <a href={`/oeuvres/${o.id}`} class="group block">
+            <div class="overflow-hidden bg-papier-2">
+              <Picture
+                src={o.data.images[0].src}
+                alt={o.data.images[0].alt}
+                widths={[400, 600, 800, 1100]}
+                sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
+                formats={['avif', 'webp']}
+                loading={i < 3 ? 'eager' : 'lazy'}
+                class="h-auto w-full transition-transform duration-700 ease-out group-hover:scale-[1.03]"
+              />
+            </div>
+            <div class="mt-3 flex items-baseline justify-between gap-4">
+              <h2 class="font-serif text-2xl">{o.data.titre}</h2>
+              <span class="text-sm text-encre-douce">{o.data.annee}</span>
+            </div>
+            <p class="text-sm text-encre-douce">
+              {o.data.materiaux} · <span class:list={[o.data.disponible && 'text-accent']}>{libellePrix(o)}</span>
+            </p>
+          </a>
+        </li>
+      ))
+    }
+  </ul>
+  <p id="aucune" class="conteneur hidden py-12 text-encre-douce">Aucune œuvre ne correspond à ces filtres.</p>
+</Base>
+
+<script>
+  function initialiserFiltres() {
+    const form = document.querySelector<HTMLFormElement>('#filtres');
+    if (!form) return;
+    const items = [...document.querySelectorAll<HTMLElement>('#grille .oeuvre')];
+    const compteur = document.querySelector('#compteur')!;
+    const aucune = document.querySelector('#aucune')!;
+
+    // Les filtres sont conservés dans l'URL (?serie=…&materiau=…&dispo=…).
+    const params = new URLSearchParams(location.search);
+    for (const nom of ['serie', 'materiau', 'dispo']) {
+      const champ = form.elements.namedItem(nom) as HTMLSelectElement | null;
+      const valeur = params.get(nom);
+      if (champ && valeur && [...champ.options].some((o) => o.value === valeur)) champ.value = valeur;
+    }
+
+    const appliquer = () => {
+      const f = new FormData(form);
+      const serie = String(f.get('serie') ?? '');
+      const materiau = String(f.get('materiau') ?? '');
+      const dispo = String(f.get('dispo') ?? '');
+      let visibles = 0;
+      for (const el of items) {
+        const ok =
+          (!serie || el.dataset.serie === serie) &&
+          (!materiau || el.dataset.materiau === materiau) &&
+          (!dispo || el.dataset.dispo === dispo);
+        el.hidden = !ok;
+        if (ok) visibles++;
+      }
+      compteur.textContent = `${visibles} œuvre${visibles > 1 ? 's' : ''}`;
+      aucune.classList.toggle('hidden', visibles > 0);
+
+      const url = new URL(location.href);
+      for (const [k, v] of [['serie', serie], ['materiau', materiau], ['dispo', dispo]]) {
+        if (v) url.searchParams.set(k, v);
+        else url.searchParams.delete(k);
+      }
+      history.replaceState(history.state, '', url);
+    };
+
+    form.addEventListener('change', appliquer);
+    appliquer();
+  }
+  document.addEventListener('astro:page-load', initialiserFiltres);
+</script>
