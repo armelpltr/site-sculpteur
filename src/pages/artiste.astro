@@ -1,0 +1,102 @@
+---
+import { Picture } from 'astro:assets';
+import Base from '@/layouts/Base.astro';
+import { site } from '@/config/site';
+import { personneJsonLd } from '@/lib/jsonld';
+import portrait from '@/assets/portrait.jpg';
+import atelier from '@/assets/atelier.jpg';
+
+// Parcours et expositions marquantes : placeholders à remplacer.
+const parcours = [
+  ['[Année]', '[Formation : école des Beaux-Arts, apprentissage en fonderie, compagnonnage…]'],
+  ['[Année]', '[Installation de l’atelier à Ville]'],
+  ['[Année]', '[Première exposition personnelle, Galerie X]'],
+  ['[Année]', '[Prix, résidence ou commande publique]'],
+];
+const expositionsMarquantes = [
+  ['[Année]', '[Titre], [Galerie], [Ville] (personnelle)'],
+  ['[Année]', '[Titre], [Centre d’art], [Ville] (collective)'],
+  ['[Année]', '[Salon], [Ville]'],
+];
+---
+
+<Base
+  titre="L'artiste"
+  description={`Biographie, démarche, parcours et expositions de ${site.nom}, ${site.metier.toLowerCase()}.`}
+  jsonLd={personneJsonLd(Astro.site)}
+>
+  <section class="conteneur grid gap-10 pt-14 sm:pt-20 md:grid-cols-[2fr_3fr] md:gap-16">
+    <Picture
+      src={portrait}
+      alt={`Portrait de ${site.nom} (photo à fournir)`}
+      widths={[400, 700, 1000]}
+      sizes="(min-width: 768px) 40vw, 100vw"
+      formats={['avif', 'webp']}
+      loading="eager"
+      class="h-auto w-full bg-papier-2"
+    />
+    <div class="md:pt-8">
+      <p class="surtitre">L'artiste</p>
+      <h1 class="mt-3 text-4xl sm:text-6xl">{site.nom}</h1>
+      <div class="prose prose-neutral mt-8 max-w-none text-base leading-relaxed">
+        <p>
+          [Biographie : origines, rencontre avec la sculpture, formation, ateliers fréquentés. Trois à cinq phrases
+          suffisent. Écrire à la troisième personne pour un ton « galerie », ou à la première pour plus de proximité.]
+        </p>
+        <p>
+          [Où l'artiste travaille aujourd'hui, avec quels matériaux et quelles techniques : taille directe, modelage,
+          fonte à la cire perdue, soudure…]
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <section class="conteneur mt-24 grid gap-10 md:grid-cols-[1fr_2fr] md:gap-16">
+    <h2 class="text-3xl sm:text-4xl">Démarche</h2>
+    <blockquote class="border-l border-accent pl-6 font-serif text-2xl leading-snug italic sm:text-3xl">
+      [Citation de l'artiste sur sa démarche : ce qu'il ou elle cherche dans la matière, le rapport au vide, au
+      geste, à la lumière.]
+    </blockquote>
+  </section>
+
+  <figure class="mt-24">
+    <Picture
+      src={atelier}
+      alt="L'atelier : plusieurs volumes sur socles (photo à fournir)"
+      layout="full-width"
+      formats={['avif', 'webp']}
+      class="h-[50svh] w-full object-cover"
+    />
+    <figcaption class="conteneur mt-3 text-sm text-encre-douce">L'atelier, {site.ville}.</figcaption>
+  </figure>
+
+  <section class="conteneur mt-24 grid gap-16 md:grid-cols-2">
+    <div>
+      <h2 class="text-3xl">Parcours</h2>
+      <ol class="mt-6 divide-y divide-trait border-y border-trait">
+        {
+          parcours.map(([annee, texte]) => (
+            <li class="grid grid-cols-[5rem_1fr] gap-4 py-4 text-sm">
+              <span class="text-encre-douce">{annee}</span>
+              <span>{texte}</span>
+            </li>
+          ))
+        }
+      </ol>
+    </div>
+    <div>
+      <h2 class="text-3xl">Expositions choisies</h2>
+      <ol class="mt-6 divide-y divide-trait border-y border-trait">
+        {
+          expositionsMarquantes.map(([annee, texte]) => (
+            <li class="grid grid-cols-[5rem_1fr] gap-4 py-4 text-sm">
+              <span class="text-encre-douce">{annee}</span>
+              <span>{texte}</span>
+            </li>
+          ))
+        }
+      </ol>
+      <a href="/expositions" class="lien mt-6 inline-block text-sm">Toutes les expositions et actualités</a>
+    </div>
+  </section>
+</Base>
