@@ -1,0 +1,57 @@
+---
+import { getImage } from 'astro:assets';
+import Base from '@/layouts/Base.astro';
+import { site } from '@/config/site';
+import { oeuvreVedette } from '@/lib/oeuvres';
+import { personneJsonLd } from '@/lib/jsonld';
+
+const vedette = await oeuvreVedette();
+// Image plein écran avec direction artistique : vue paysage sur grand écran
+// (si l'œuvre en a une), couverture portrait sur mobile.
+const portrait = vedette.data.images[0];
+const paysage = vedette.data.images.find((i) => i.src.width > i.src.height) ?? portrait;
+const srcset = async (img: typeof portrait, largeurs: number[]) => {
+  const versions = await Promise.all(
+    largeurs.filter((w) => w <= img.src.width).map((w) => getImage({ src: img.src, width: w, format: 'webp' })),
+  );
+  return { srcset: versions.map((v) => `${v.src} ${v.attributes.width}w`).join(', '), defaut: versions.at(-1)!.src };
+};
+const large = await srcset(paysage, [1280, 1920, 2560]);
+const etroit = await srcset(portrait, [480, 800, 1200]);
+const og = await getImage({ src: portrait.src, width: 1200, format: 'jpeg' });
+---
+
+<Base enteteTransparent image={og.src} imageAlt={portrait.alt} jsonLd={personneJsonLd(Astro.site)}>
+  <section class="relative h-[100svh] min-h-[560px] w-full overflow-hidden bg-papier-2">
+    <picture>
+      <source media="(min-width: 768px)" srcset={large.srcset} sizes="100vw" type="image/webp" />
+      <img
+        src={etroit.defaut}
+        srcset={etroit.srcset}
+        sizes="100vw"
+        alt={portrait.alt}
+        fetchpriority="high"
+        decoding="async"
+        class="absolute inset-0 h-full w-full object-cover"
+      />
+    </picture>
+    <div class="absolute inset-x-0 bottom-0 h-2/3 bg-gradient-to-t from-papier via-papier/60 to-transparent"></div>
+    <div class="conteneur relative flex h-full flex-col justify-end pb-16 sm:pb-24">
+      <p class="surtitre apparition">{site.metier}</p>
+      <h1 class="apparition mt-3 text-5xl leading-none sm:text-7xl md:text-8xl">{site.nom}</h1>
+      <p class="apparition mt-5 max-w-md font-serif text-xl text-encre-douce italic sm:text-2xl">{site.accroche}</p>
+      <div class="apparition mt-8 flex flex-wrap gap-3">
+        <a href="/galerie" class="bouton-plein">Découvrir la galerie</a>
+        <a href={`/oeuvres/${vedette.id}`} class="bouton bg-papier/60 backdrop-blur-sm">{vedette.data.titre}, {vedette.data.annee}</a>
+      </div>
+    </div>
+  </section>
+
+  <section class="conteneur grid gap-10 py-24 md:grid-cols-[1fr_2fr] md:gap-16">
+    <p class="surtitre">L'atelier</p>
+    <div>
+      <p class="font-serif text-2xl leading-snug sm:text-3xl">{site.bioCourte}</p>
+      <a href="/artiste" class="lien mt-6 inline-block text-sm">En savoir plus sur l'artiste</a>
+    </div>
+  </section>
+</Base>
