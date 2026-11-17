@@ -5,7 +5,8 @@ interface Props {
   transparent?: boolean;
 }
 const { transparent = false } = Astro.props;
-const chemin = Astro.url.pathname.replace(/\/$/, '') || '/';
+// Chemin sans le sous-dossier éventuel (GitHub Pages).
+const chemin = Astro.url.pathname.slice(import.meta.env.BASE_URL.replace(/\/$/, '').length).replace(/\/$/, '') || '/';
 const actif = (href: string) =>
   chemin === href || chemin.startsWith(href + '/') || (href === '/galerie' && chemin.startsWith('/oeuvres'));
 ---

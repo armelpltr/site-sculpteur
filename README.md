@@ -117,6 +117,15 @@ reconstruire le site.
 
 ## Déployer
 
+### GitHub Pages (aperçu en ligne, actif)
+
+Chaque push sur `main` publie le site sur **https://armelpltr.github.io/site-sculpteur/** via
+`.github/workflows/pages.yml`. Le workflow construit le site avec `SITE_URL` et `BASE_PATH`, puis
+`scripts/prefixer-base.mjs` ajoute le sous-dossier `/site-sculpteur/` aux liens internes et aux URL absolues.
+
+Limite : GitHub Pages est un hébergement statique, **le formulaire Netlify Forms n'y fonctionne pas**.
+Pour un formulaire fonctionnel sur Pages, passer sur Formspree (`formulaire.service: 'formspree'`).
+
 Rien n'est déployé pour l'instant. Les deux configurations sont prêtes :
 
 ### Netlify (recommandé : le formulaire fonctionne sans service tiers)
