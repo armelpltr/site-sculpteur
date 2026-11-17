@@ -13,7 +13,7 @@ export const site = {
   ville: '[Ville]',
   atelier: "[Adresse de l'atelier, visites sur rendez-vous]",
   email: 'contact@exemple-sculpteur.fr',
-  telephone: '', // facultatif, laissé vide = non affiché
+  telephone: '' as string, // facultatif, laissé vide = non affiché
   langue: 'fr-FR',
   reseaux: {
     instagram: 'https://www.instagram.com/[compte]',

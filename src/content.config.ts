@@ -37,7 +37,7 @@ const expositions = defineCollection({
     debut: z.coerce.date(),
     fin: z.coerce.date().optional(),
     type: z.enum(['exposition personnelle', 'exposition collective', 'salon', 'actualité']),
-    lien: z.string().url().optional(),
+    lien: z.url().optional(),
   }),
 });
 

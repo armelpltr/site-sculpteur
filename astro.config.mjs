@@ -10,7 +10,7 @@ const SITE_URL = 'https://www.exemple-sculpteur.fr';
 export default defineConfig({
   site: SITE_URL,
   trailingSlash: 'ignore',
-  integrations: [sitemap()],
+  integrations: [sitemap({ filter: (page) => !/\/(merci|404)\/?$/.test(page) })],
   image: {
     layout: 'constrained',
     responsiveStyles: true,
