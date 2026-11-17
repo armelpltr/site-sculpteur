@@ -1,0 +1,83 @@
+---
+import { site, navigation } from '@/config/site';
+
+interface Props {
+  transparent?: boolean;
+}
+const { transparent = false } = Astro.props;
+const chemin = Astro.url.pathname.replace(/\/$/, '') || '/';
+const actif = (href: string) =>
+  chemin === href || chemin.startsWith(href + '/') || (href === '/galerie' && chemin.startsWith('/oeuvres'));
+---
+
+<header class:list={['z-40 w-full', transparent ? 'absolute inset-x-0 top-0' : 'border-b border-trait/70 bg-papier']}>
+  <div class="conteneur flex h-16 items-center justify-between sm:h-20">
+    <a href="/" class="font-serif text-xl tracking-wide sm:text-2xl">{site.nom}</a>
+
+    <nav aria-label="Navigation principale" class="hidden md:block">
+      <ul class="flex gap-8 text-sm">
+        {
+          navigation.map((item) => (
+            <li>
+              <a
+                href={item.href}
+                aria-current={actif(item.href) ? 'page' : undefined}
+                class:list={[
+                  'py-2 transition-colors hover:text-accent',
+                  actif(item.href) ? 'text-encre underline decoration-accent underline-offset-8' : 'text-encre-douce',
+                ]}
+              >
+                {item.label}
+              </a>
+            </li>
+          ))
+        }
+      </ul>
+    </nav>
+
+    <details class="menu-mobile relative md:hidden">
+      <summary class="flex h-11 w-11 cursor-pointer list-none items-center justify-center" aria-label="Menu">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+          <path d="M4 8h16M4 16h16"></path>
+        </svg>
+      </summary>
+      <nav aria-label="Navigation mobile" class="absolute top-12 right-0 w-56 border border-trait bg-papier p-2 shadow-sm">
+        <ul>
+          {
+            navigation.map((item) => (
+              <li>
+                <a
+                  href={item.href}
+                  aria-current={actif(item.href) ? 'page' : undefined}
+                  class="block px-4 py-3 text-base hover:bg-papier-2"
+                >
+                  {item.label}
+                </a>
+              </li>
+            ))
+          }
+        </ul>
+      </nav>
+    </details>
+  </div>
+</header>
+
+<style>
+  .menu-mobile summary::-webkit-details-marker {
+    display: none;
+  }
+</style>
+
+<script>
+  // Referme le menu mobile avec Échap.
+  document.addEventListener('astro:page-load', () => {
+    const menu = document.querySelector<HTMLDetailsElement>('.menu-mobile');
+    if (!menu) return;
+    menu.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && menu.open) {
+        menu.open = false;
+        menu.querySelector('summary')?.focus();
+      }
+    });
+  });
+</script>

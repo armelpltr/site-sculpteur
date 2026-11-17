@@ -1,0 +1,39 @@
+---
+import { site } from '@/config/site';
+const annee = new Date().getFullYear();
+---
+
+<footer class="mt-24 border-t border-trait">
+  <div class="conteneur grid gap-8 py-12 text-sm text-encre-douce sm:grid-cols-3">
+    <div>
+      <p class="font-serif text-xl text-encre">{site.nom}</p>
+      <p class="mt-1">{site.metier} · {site.ville}</p>
+    </div>
+    <div class="space-y-1">
+      <p><a class="lien" href={`mailto:${site.email}`}>{site.email}</a></p>
+      {
+        site.reseaux.instagram && (
+          <p>
+            <a class="lien" href={site.reseaux.instagram} rel="me noopener" target="_blank">
+              Instagram
+            </a>
+          </p>
+        )
+      }
+      {
+        site.reseaux.facebook && (
+          <p>
+            <a class="lien" href={site.reseaux.facebook} rel="me noopener" target="_blank">
+              Facebook
+            </a>
+          </p>
+        )
+      }
+    </div>
+    <div class="space-y-1 sm:text-right">
+      <p><a class="lien" href="/mentions-legales">Mentions légales</a></p>
+      <p><a class="lien" href="/confidentialite">Politique de confidentialité</a></p>
+      <p class="pt-2">© {annee} {site.nom}. Tous droits réservés.</p>
+    </div>
+  </div>
+</footer>

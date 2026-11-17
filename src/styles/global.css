@@ -1,0 +1,87 @@
+@import 'tailwindcss';
+@plugin '@tailwindcss/typography';
+
+@import '@fontsource/cormorant-garamond/400.css';
+@import '@fontsource/cormorant-garamond/500.css';
+@import '@fontsource/cormorant-garamond/400-italic.css';
+@import '@fontsource-variable/inter';
+
+@theme {
+  --font-serif: 'Cormorant Garamond', 'Times New Roman', serif;
+  --font-sans: 'Inter Variable', system-ui, sans-serif;
+
+  --color-papier: #f7f5f1; /* blanc cassé */
+  --color-papier-2: #efece6;
+  --color-encre: #2a2a2a; /* anthracite */
+  --color-encre-douce: #5f5c57;
+  --color-trait: #dcd8d0;
+  --color-accent: #8a6a43; /* bronze, accent unique */
+  --color-accent-fonce: #6e5333;
+}
+
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+    scroll-behavior: smooth;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    html {
+      scroll-behavior: auto;
+    }
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+  body {
+    @apply bg-papier text-encre font-sans antialiased;
+  }
+  h1,
+  h2,
+  h3 {
+    @apply font-serif font-normal tracking-tight;
+  }
+  :focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 3px;
+  }
+  ::selection {
+    background: var(--color-accent);
+    color: var(--color-papier);
+  }
+}
+
+@utility conteneur {
+  @apply mx-auto w-full max-w-6xl px-5 sm:px-8;
+}
+@utility surtitre {
+  @apply text-xs tracking-[0.2em] text-encre-douce uppercase;
+}
+@utility lien {
+  @apply underline decoration-trait underline-offset-4 transition-colors hover:decoration-accent;
+}
+@utility bouton {
+  @apply inline-flex min-h-11 items-center justify-center gap-2 border border-encre px-6 py-3 text-sm tracking-wide transition-colors duration-300 hover:bg-encre hover:text-papier;
+}
+@utility bouton-plein {
+  @apply inline-flex min-h-11 items-center justify-center gap-2 border border-encre bg-encre px-6 py-3 text-sm tracking-wide text-papier transition-colors duration-300 hover:border-accent-fonce hover:bg-accent-fonce;
+}
+@utility champ {
+  @apply w-full border-0 border-b border-trait bg-transparent px-0 py-3 text-base transition-colors focus:border-encre focus:outline-none;
+}
+@utility apparition {
+  animation: apparition 0.9s ease-out both;
+}
+
+@keyframes apparition {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
